@@ -1,0 +1,14 @@
+import 'package:flutter/material.dart';
+
+class Password extends StatelessWidget {
+  const Password({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // TODO: implement build
+    return Scaffold(
+      appBar: AppBar(title: Text('Password')),
+      body: Center(child: Text('Password')),
+    );
+  }
+}

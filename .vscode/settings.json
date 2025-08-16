@@ -1,0 +1,7 @@
+{
+    "Codegeex.CommitMessage.LanguagePreference": "English",
+    "Codegeex.Chat.LanguagePreference": "English",
+    "Codegeex.Comment.LanguagePreference": "English",
+    "Codegeex.CompletionDelay": 0.2,
+    "Codegeex.GenerationPreference": "line by line"
+}
