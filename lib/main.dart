@@ -1,25 +1,25 @@
-import 'package:bmsk_userapp/AddBalance.dart';
-import 'package:bmsk_userapp/BankScreen.dart';
-import 'package:bmsk_userapp/Support/Contact.dart';
-// import 'package:bmsk_userapp/DrivePackFragment.dart';
-import 'package:bmsk_userapp/Profile/EditProfile.dart';
-import 'package:bmsk_userapp/History/History.dart';
-import 'package:bmsk_userapp/IndexScreen.dart';
-import 'package:bmsk_userapp/Login.dart';
-import 'package:bmsk_userapp/Register/Registe.dart';
-import 'package:bmsk_userapp/providers/AuthProvider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:bmsk_userapp/PackScreen.dart';
-import 'package:bmsk_userapp/Profile/Profile.dart';
-import 'package:bmsk_userapp/providers/HistoryProvider.dart';
-// import 'package:bmsk_userapp/Register.dart';
-import 'package:bmsk_userapp/providers/ThemeProvider.dart';
-import 'package:bmsk_userapp/Topup.dart';
-import 'package:bmsk_userapp/providers/TransferProvider.dart';
-import 'package:bmsk_userapp/theme.dart';
 import 'package:flutter/material.dart';
 //import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
+//import 'package:shared_preferences/shared_preferences.dart';
+import 'Verify.dart';
+//import 'AddBalance.dart';
+//import 'Bank.dart';
+//import 'Support/Contact.dart';
+// import 'DrivePackFragment.dart';
+//import 'Profile/EditProfile.dart';
+import 'providers/DepositProvider.dart';
+import 'Login.dart';
+//import '/Register/Register.dart';
+import 'providers/AuthProvider.dart';
+import 'Theme.dart';
+//import 'Profile/Profile.dart';
+import 'providers/HistoryProvider.dart';
+ import 'providers/RegisterProvider.dart';
+import 'providers/AppProvider.dart';
+import 'providers/TelecomProvider.dart';
+import 'providers/ApiProvider.dart';
+import 'providers/NotificationProvider.dart';
 //import 'package:socket_io_client/socket_io_client.dart' as IO;
 //CableTVBillCreditCardBillElectricityBillGasBillHoldingTaxBillInternetBillLandBillTelephoneBillWaterBill
 void main()async {
@@ -28,10 +28,14 @@ void main()async {
   runApp(
     MultiProvider(
       providers:[
+        ChangeNotifierProvider(create: (_) => AppProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(create: (_) => TransferProvider()),
+        ChangeNotifierProvider(create: (_) => ApiProvider()),
         ChangeNotifierProvider(create: (_) => HistoryProvider()),
+        ChangeNotifierProvider(create: (_) => RegisterProvider()),
+        ChangeNotifierProvider(create: (_) => TelecomProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
+        ChangeNotifierProvider(create: (_) => DepositProvider()),
       ],
   child: MyApp(),
   )
@@ -44,10 +48,10 @@ class MyApp extends StatefulWidget{
 }
 
 class _MyAppState extends State<MyApp> {
- Future<bool?> loginStatus() async{
- SharedPreferences prefs=await SharedPreferences.getInstance();
-return prefs.getBool('logged');
-}
+  /*bool loginStatus() async{
+    SharedPreferences prefs=await SharedPreferences.getInstance();
+    return prefs.containsKey('auth');
+  }*/
   /*late IO.Socket socket;
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
@@ -107,29 +111,29 @@ return prefs.getBool('logged');
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
-    bool logged = loginStatus() as bool;
-  final theme = context.watch<ThemeProvider>();
+    //bool logged = loginStatus() as bool;
+  final app = context.watch<AppProvider>();
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Flutter Demo',
-      theme: theme.isDarkTheme?darkMode:lightMode/*ThemeData(
+      theme: app.isDarkTheme?darkMode:lightMode/*ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       )*/,
-      home: (auth.loggedIn||logged)? IndexScreen():LoginScreen(),
-      routes: {
-        '/login': (cotext) => LoginScreen(),
-        '/registration': (cotext) => RegistrationScreen(),
-        '/add-balance': (cotext) => AddBalanceScreen(),
-        '/topup': (context) => TopupScreen(),
-        '/pack' : (context) => PackScreen(),
-        '/bank': (context) => BankScreen(),
-        '/history': (context) => HistoryScreen(),
-        '/contact': (context) => ContactScreen(),
-        /*'/notification': (context) => NotificationScreen(),
-        '/security': (context) => SecurityScreen(),*/
-        '/profile': (context) => ProfileScreen(),
-        '/edit-profile': (context) => EditProfileScreen(),// - ,   ""   
-      }
+      home: /*(auth.loggedIn||loginStatus())*/auth.loggedIn? Verify():Login(),
+      /*routes: {
+        '/login': (cotext) => Login(),
+        '/registration': (cotext) => Registration(),
+        '/add-balance': (cotext) => AddBalance(),
+        '/topup': (context) => Topup(),
+        '/pack' : (context) => Pack(),
+        '/bank': (context) => Bank(),
+        '/history': (context) => History(),
+        '/contact': (context) => Contact(),
+        /*'/notification': (context) => Notification(),
+        '/security': (context) => Security(),*/
+        '/profile': (context) => Profile(),
+        '/edit-profile': (context) => EditProfile(),// - ,   ""   
+      }*/
         //          .
         //    " " (      "
         //       ).
@@ -144,9 +148,12 @@ return prefs.getBool('logged');
   }
 }
 
-class MyHomePage extends StatefulWidget {
+/*class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
 
+  final String title;
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
   // how it looks.
@@ -155,12 +162,9 @@ class MyHomePage extends StatefulWidget {
   // case the title) provided by the parent (in this case the App widget) and
   // used by the build method of the State. Fields in a Widget subclass are
   // always marked "final".
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
 }
+
+
 
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
@@ -228,4 +232,4 @@ class _MyHomePageState extends State<MyHomePage> {
       ),*/ // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
-}
+}*/

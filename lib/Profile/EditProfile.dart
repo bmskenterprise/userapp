@@ -1,6 +1,6 @@
-import 'package:bmsk_userapp/util/baseURL.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';// as http;
+import '../providers/AuthProvider.dart';
 
 /* void main() => runApp(EditProfileApp());
 
@@ -8,29 +8,30 @@ class EditProfileApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: EditProfileScreen(),
+      home: EditProfile(),
       debugShowCheckedModeBanner: false,
     );
   }
 }*/
 
-class EditProfileScreen extends StatelessWidget {
-  final TextEditingController usernameController = TextEditingController(text: "fajar123@gmail.com",);
-  final TextEditingController nameController = TextEditingController(text: "Fajar Kun",);
-  final TextEditingController NIDController = TextEditingController(text: "01 April 2004",);
-  final TextEditingController phoneController = TextEditingController(text: "898981239102",);
-  final TextEditingController addressController = TextEditingController();
-  void updateProfile() {
-    // Update profile logic here
-    try {
-      final uri ='${ApiConstants.baseUrl}/api/update-profile';
-      final response = http.post(Uri.parse(uri), body: {});
-      if (response.statusCode == 200) {
-        v
-      }
-    } catch (e) {
-      // Handle error
-    }
+class EditProfile extends StatefulWidget{
+  const EditProfile({super.key});
+  @override
+  State<EditProfile> createState() => _EditProfile();
+}
+
+class _EditProfile extends State<EditProfile> {
+  final TextEditingController _controllerUsername = TextEditingController(text: "fajar123@gmail.com",);
+  final TextEditingController _controllerName = TextEditingController(text: "Fajar Kun",);
+  final TextEditingController _controllerNID = TextEditingController(text: "01 April 2004",);
+  //final TextEditingController _controller = TextEditingController(text: "898981239102",);
+  //final TextEditingController addressController = TextEditingController();
+  @override
+  void dispose() {
+    _controllerUsername.dispose();
+    _controllerName.dispose();
+    _controllerNID.dispose();
+    super.dispose();
   }
 
   @override
@@ -96,17 +97,17 @@ class EditProfileScreen extends StatelessWidget {
                       buildTextField(
                         "Email",
                         Icons.verified_user,
-                        usernameController,
+                        _controllerUsername,
                       ),
 
                       // Name
-                      buildTextField("Your Name", Icons.person, nameController),
+                      buildTextField("Your Name", Icons.person, _controllerName),
 
                       // Date of Birth
                       buildTextField(
                         "Date of Birth",
                         Icons.calendar_today,
-                        NIDController,
+                        _controllerNID,
                       ),
 
                       // Phone Number
@@ -121,19 +122,19 @@ class EditProfileScreen extends StatelessWidget {
                             child: Text("+62"),
                           ),
                           SizedBox(width: 10),
-                          Expanded(
+                          /*Expanded(
                             child: buildTextField(
                               "",
                               Icons.phone,
                               phoneController,
                             ),
-                          ),
+                          ),*/
                         ],
                       ),
                       SizedBox(height: 20),
 
                       // Address
-                      TextField(
+                      /*TextField(
                         controller: addressController,
                         maxLength: 200,
                         maxLines: 3,
@@ -143,7 +144,7 @@ class EditProfileScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                      ),
+                      ),*/
                       SizedBox(height: 20),
 
                       // Update Button
@@ -156,9 +157,9 @@ class EditProfileScreen extends StatelessWidget {
                           ),
                         ),
                         onPressed: () {
-                          updateProfile();
+                          context.read<AuthProvider>().editProfile();
                         },
-                        child: Text("Update", style: TextStyle(fontSize: 16)),
+                        child: Text("EDIT", style: TextStyle(fontSize: 16)),
                       ),
                     ],
                   ),

@@ -1,9 +1,11 @@
-import 'package:bmsk_userapp/providers/AuthProvider.dart';
-import 'package:bmsk_userapp/providers/ThemeProvider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:bmsk_userapp/Profile/NotificationScreen.dart';
-import 'package:bmsk_userapp/Profile/SecurityScreen.dart';/* StatelessWidget{
+import '../providers/AuthProvider.dart';
+import '../providers/AppProvider.dart';
+import '../Login.dart';
+import 'Notification.dart';
+import 'Security.dart';
+/*StatelessWidget{
   @override
   Widget build (BuildContext context){
     v
@@ -16,14 +18,15 @@ class ProfileApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: ProfileScreen(),
+      home: Profile(),
       debugShowCheckedModeBanner: false,
     );
   }
 }*/
 
 
-class ProfileScreen extends StatelessWidget {
+class Profile extends StatelessWidget {
+  const Profile({super.key});
   
   @override
   Widget build(BuildContext context) {
@@ -39,8 +42,8 @@ class ProfileScreen extends StatelessWidget {
               Row(
                 children: [
                   CircleAvatar(
-                    radius: 35,
-                    backgroundImage: NetworkImage('https://www.gstatic.com/flutter-onestack-prototype/genui/example_1.jpg',), // Replace with actual image
+                    radius: 25,
+                    backgroundImage: AssetImage('assets/user-profile-icon-circle_1256048-12499.jpg'), // Replace with actual image
                   ),
                   SizedBox(width: 12),
                   Column(
@@ -68,7 +71,7 @@ class ProfileScreen extends StatelessWidget {
                   child: Column(
                     children: [
                       SettingItem(icon: Icons.notifications, label: 'Notification', toGo: (){Navigator.push(context, MaterialPageRoute(builder: (context)=>NotificationScreen()));},),
-                      SettingItem(icon: Icons.security, label: 'Security', toGo: (){Navigator.push(context, MaterialPageRoute(builder:(context)=>SecurityScreen()));},),
+                      SettingItem(icon: Icons.security, label: 'Security', toGo: (){Navigator.push(context, MaterialPageRoute(builder:(context)=>Security()));},),
                       ThemeSetting(icon: Icons.dark_mode, label: 'Dark Theme'),
                       //SettingItem(icon: Icons.chat_bubble, label: 'Contact Us', toGo: (){Navigator.push(context, );}),
                       SettingItem(icon: Icons.logout, label: 'Logout', isLogout: true, toGo: (){
@@ -96,9 +99,9 @@ class ProfileScreen extends StatelessWidget {
                               TextButton(
                                 child: const Text('YES'),
                                 onPressed: () {
-                                  Navigator.of(context).pop();
                                   Provider.of<AuthProvider>(context, listen: false).logout();
-                      Navigator.pushNamed(context, '/login');
+                                  Navigator.of(context).pop();
+                      Navigator.push(context, MaterialPageRoute(builder: (context)=>Login()));
                                 },
                               )
                             ],
@@ -150,16 +153,16 @@ class SummaryCard extends StatelessWidget {
 class ThemeSetting extends StatefulWidget{
   final IconData icon;
   final String label;
-
   const ThemeSetting({super.key, required this.icon, required this.label});
-
   @override
   State<ThemeSetting> createState() => _ThemeSettingState();
 }
+
+
 class _ThemeSettingState extends State<ThemeSetting>{
   @override
   Widget build(BuildContext context) {
-    final  theme = Provider.of<ThemeProvider>(context);
+    final  app = context.watch<AppProvider>();
   
     return ListTile(
       leading: CircleAvatar(
@@ -167,7 +170,7 @@ class _ThemeSettingState extends State<ThemeSetting>{
         child: Icon(widget.icon, color: Colors.black),
       ),
       title: Text(widget.label, style: TextStyle(color: Colors.black),),
-      trailing: Switch(value: theme.isDarkTheme, onChanged: (_) {setState((){theme.toggleTheme();});}),
+      trailing: Switch(value: app.isDarkTheme, onChanged: (_) {setState((){context.read<AppProvider>().toggleTheme();});}),
     );
   }
 }
@@ -180,7 +183,7 @@ class SettingItem extends StatelessWidget {
   final Function toGo;
   final bool isLogout;
 
-  const SettingItem({required this.icon, required this.label, this.isLogout = false, required this.toGo});
+  const SettingItem({super.key, required this.icon, required this.label, this.isLogout = false, required this.toGo});
 
   @override
   Widget build(BuildContext context) {

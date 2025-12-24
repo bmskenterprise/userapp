@@ -1,20 +1,25 @@
-import 'package:bmsk_userapp/FullScreenLoader.dart';
-import 'package:bmsk_userapp/Toast.dart';
-import 'package:bmsk_userapp/providers/AuthProvider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../FullScreenLoader.dart';
+//import '../widgets/Toast.dart';
+import '../providers/AuthProvider.dart';
 
 class ChangePassword extends StatefulWidget {
   const ChangePassword({super.key});
-
   @override
   State<ChangePassword> createState() => _ChangePasswordState();
 }
 
+
 class _ChangePasswordState extends State<ChangePassword> {
-  final TextEditingController _oldPasswordController = TextEditingController();
-  final TextEditingController _newPasswordController = TextEditingController();
-  
+  final TextEditingController _controllerOldPassword = TextEditingController();
+  final TextEditingController _controllerNewPassword = TextEditingController();
+  @override
+  void dispose() {
+    _controllerOldPassword.dispose();
+    _controllerNewPassword.dispose();
+    super.dispose();
+  }
   @override
   Widget build(BuildContext context) {
     return  Scaffold(
@@ -26,7 +31,7 @@ class _ChangePasswordState extends State<ChangePassword> {
         child: Column(
           children: [
             TextFormField(
-              controller: _oldPasswordController,
+              controller: _controllerOldPassword,
               decoration: InputDecoration(
                 labelText: 'Old Password',
                 errorText: context.watch<AuthProvider>().asyncError,
@@ -34,7 +39,7 @@ class _ChangePasswordState extends State<ChangePassword> {
               ),
             ),
             TextFormField(
-              controller: _newPasswordController,
+              controller: _controllerNewPassword,
               decoration: InputDecoration(
                 labelText: 'New Password',
                 border: OutlineInputBorder()
@@ -48,13 +53,13 @@ class _ChangePasswordState extends State<ChangePassword> {
             ),
             ElevatedButton(
               onPressed: ()async{
-                Map<String, dynamic> res=await context.read<AuthProvider>().changePassword(_oldPasswordController.text.trim(), _newPasswordController.text.trim());
-                if(res['success']){
+                /*Map<String, dynamic> res=await */context.read<AuthProvider>().changePassword(_controllerOldPassword.text.trim(), _controllerNewPassword.text.trim());
+                /*if(res['success']){
                   Toast(res);
                   Navigator.pop(context);
                 }else{
                   Toast(res);
-                }
+                }*/
               },
               child: Text('Change Password'),
             )

@@ -9,6 +9,9 @@ class NotificationProvider with ChangeNotifier {
   int _failedRegularCount=0;
   int _failedBankCount=0;
   int _failedBillCount=0;
+  int _failedBkashCount=0;
+  int _failedDBBLCount=0;
+  int _failedNagadCount=0;
 
   int get failedDepositCount => _failedDepositCount;
   int get failedTopupCount => _failedTopupCount;
@@ -16,6 +19,9 @@ class NotificationProvider with ChangeNotifier {
   int get failedRegularCount => _failedRegularCount;
   int get failedBankCount => _failedBankCount;
   int get failedBillCount => _failedBillCount;
+  int get failedBkashCount => _failedBkashCount;
+  int get failedDBBLCount => _failedDBBLCount;
+  int get failedNagadCount => _failedNagadCount;
   int get totalUnseenCount => _failedDepositCount + _failedTopupCount + _failedDriveCount + _failedRegularCount + _failedBankCount + _failedBillCount;
   /* = await http.get(Uri.parse());
       if(response.statusCode==200){
@@ -44,6 +50,15 @@ class NotificationProvider with ChangeNotifier {
   }
   unseenBillCount(int unseen){
     _failedBillCount=unseen;notifyListeners();
+  }
+  unseenBkashCount(int unseen){
+    _failedBkashCount=unseen;notifyListeners();
+  }
+  unseenDBBLCount(int unseen){
+    _failedDBBLCount=unseen;notifyListeners();
+  }
+  unseenNagadCount(int unseen){
+    _failedNagadCount=unseen;notifyListeners();
   }
   /*fetchFailedBanksCount() async {
     try {

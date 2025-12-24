@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'Contact.dart';
 import 'Feedback.dart';
 
-class SupportScreen extends StatelessWidget {
-  const SupportScreen({super.key});
+class Support extends StatelessWidget {
+  const Support({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +16,7 @@ class SupportScreen extends StatelessWidget {
           ),
         ),
         body: TabBarView(
-          children:[ContactScreen(), FeedbackScreen()]
+          children:[Contact(), FeedbackScreen()]
         )
       )
     );

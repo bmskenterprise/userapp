@@ -1,25 +1,32 @@
-import 'package:bmsk_userapp/AuthService.dart';
-import 'package:bmsk_userapp/FullScreenLoader.dart';
-import 'package:bmsk_userapp/util/baseURL.dart';
-import 'package:bmsk_userapp/providers/AuthProvider.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+//import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
+//import '../services/AuthService.dart';
+import '../FullScreenLoader.dart';
+//import '../util/baseURL.dart';
+import '../providers/AuthProvider.dart';
 
-class ChangePassword extends StatefulWidget {
-  const ChangePassword({super.key});
-
+class ChangePIN extends StatefulWidget {
+  const ChangePIN({super.key});
   @override
-  State<ChangePassword> createState() => _ChangePasswordState();
+  State<ChangePIN> createState() => _ChangePINState();
 }
 
-class _ChangePasswordState extends State<ChangePassword> {
+
+class _ChangePINState extends State<ChangePIN> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _pinController = TextEditingController();
-  // bool? requesting=false;
+  final TextEditingController _controllerOldPIN = TextEditingController();
+  final TextEditingController _controllerNewPIN = TextEditingController();
 
   @override
+  void dispose() {
+    _controllerOldPIN.dispose();
+    _controllerNewPIN.dispose();
+    super.dispose();
+  }
+  @override
   Widget build(BuildContext context) {
+    final auth=context.watch<AuthProvider>();
     return Scaffold(
       body:  Stack(
         children: [
@@ -30,15 +37,16 @@ class _ChangePasswordState extends State<ChangePassword> {
               child: Column(
                 children: [
                   TextFormField(
+                    controller:_controllerOldPIN,
                     decoration: InputDecoration(
                       labelText: 'Old PIN',
-                      errorText: context.watch<AuthProvider>().asyncError,
+                      errorText: auth.asyncError,
                       border: OutlineInputBorder()
                     ),
                   ),
                   SizedBox(height: 10),
                   TextFormField(
-                    controller: _pinController,
+                    controller: _controllerNewPIN,
                     decoration: InputDecoration(
                       labelText: 'New PIN',
                       border: OutlineInputBorder()
@@ -55,14 +63,14 @@ class _ChangePasswordState extends State<ChangePassword> {
                   ElevatedButton(
                     onPressed: ()async{
                       if(_formKey.currentState!.validate()){
-                          AuthProvider().matchPIN(_pinController);
+                          auth.validatePIN(_controllerOldPIN.text);
+                          if(auth.matchedPIN){context.read<AuthProvider>().changePIN(_controllerNewPIN.text);}
                       }//);
-                      final response=await http.get(Uri.parse(ApiConstants.changePassword));
+                      /*final response=await http.get(Uri.parse(ApiConstants.changePassword));
                       if(response.statusCode==200){
                         setState((){
-                          requesting=false;
                         });
-                      }
+                      }*/
                     },
                     child: Text('Change PIN'),
                   )
@@ -70,15 +78,10 @@ class _ChangePasswordState extends State<ChangePassword> {
               ),
             )
       ),
-            context.watch<AuthProvider>().loading ? FullScreenLoader() : const SizedBox()
+            auth.loading ? FullScreenLoader() : const SizedBox()
 
           ]
     ),
     );
-  }
-  @override
-  void dispose() {
-    _passwordController.dispose();
-    super.dispose();
   }
 }

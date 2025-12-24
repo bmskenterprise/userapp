@@ -1,29 +1,30 @@
-import 'dart:convert';
-import 'package:bmsk_userapp/Toast.dart';
-import 'package:bmsk_userapp/util/baseURL.dart';
+//import 'dart:convert';
+import '../widgets/Toast.dart';
+import '../providers/ApiProvider.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+//import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 
 //void main() => runApp(ContactApp());
-class ContactScreen extends StatefulWidget {
-       ContactScreen({super.key});
+class Contact extends StatefulWidget {
+      const Contact({super.key});
   @override
-  State<ContactScreen> createState() => _ContactScreenState();
+  State<Contact> createState() => _ContactState();
 }
 
-class _ContactScreenState extends State<ContactScreen> {
-  late List contacts;bool loading=true;
+class _ContactState extends State<Contact> {
+  //late List contacts;bool loading=true;
   late List<ContactOption> options;
   
   @override
   void initState() {
-    fetchContacts();
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {context.read<ApiProvider>().getContacts();});
   }
   
-  Future fetchContacts () async{
+  /*Future fetchContacts () async{
     try {
       final response = await http.get(Uri.parse(ApiConstants.contact));
       if(response.statusCode==200){
@@ -61,10 +62,11 @@ class _ContactScreenState extends State<ContactScreen> {
     } catch (e) {
       
     }
-  }
+  }*/
 
   @override
   Widget build(BuildContext context) {
+    final api = context.watch<ApiProvider>();//   Toast({'message':'Could not launch $url', 'success': false});
     return Scaffold(
       backgroundColor: Color(0xFFF8F9FB),
       appBar: AppBar(
@@ -74,16 +76,16 @@ class _ContactScreenState extends State<ContactScreen> {
           icon: Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () {},
         ),
-        centerTitle: true,
+        //centerTitle: true,
         title: Text(
           'Contact Us',
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
       ),
-      body: loading?Center(child:CircularProgressIndicator()):Padding(
+      body: api.loading?Center(child:CircularProgressIndicator()):Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          children: options.map((option) => ContactTile(option: option)).toList(),
+          children: /*options*/api.contacts.map((Map<String,String> contact) => ContactTile(option: ContactOption.fromJson(contact))).toList(),
         ),
       ),
     );
@@ -91,18 +93,25 @@ class _ContactScreenState extends State<ContactScreen> {
 }
 
 class ContactOption {
-  final String name;
-  final String logo;
-  final Color color;
+  final String media;
+  final String icon;
+  //final Color color;
   final String contactURL;
 
-  ContactOption({required this.name, required this.logo, required this.color,required this.contactURL});
+  ContactOption({required this.media, required this.icon,/* required this.color,*/required this.contactURL});
+  factory ContactOption.fromJson(Map<String, String> json) {
+    return ContactOption(
+      media: json['media']??'',
+      icon: json['icon']??'',
+      contactURL: json['contactURL']??'',
+    );
+  }
 }
 
 class ContactTile extends StatelessWidget {
   final ContactOption option;
+  const ContactTile({super.key,required this.option});
 
-  ContactTile({required this.option});
 
   @override
   Widget build(BuildContext context) {
@@ -111,9 +120,8 @@ class ContactTile extends StatelessWidget {
         final url = Uri.parse(option.contactURL);
         if (await canLaunchUrl(url)) {
           await launchUrl(url, mode: LaunchMode.externalApplication);
-        } else {
-          Toast({'message':'Could not launch $url', 'success': false});
-        }
+        } else {Toast({'message':'Could not launch $url', 'success': false});}
+        
       },
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 8),
@@ -126,13 +134,13 @@ class ContactTile extends StatelessWidget {
           children: [
             CircleAvatar(
               // ignore: deprecated_member_use
-              backgroundColor: option.color.withOpacity(0.1),
-              child: Image.asset(option.logo),
+              //backgroundColor: option.color.withOpacity(0.1),
+              child: Image.network(option.icon),
             ),
             SizedBox(width: 16),
             Expanded(
               child: Text(
-                option.name,
+                option.media,
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
               ),
             ),

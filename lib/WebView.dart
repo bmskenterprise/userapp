@@ -1,6 +1,6 @@
-import 'package:bmsk_userapp/Toast.dart';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'widgets/Toast.dart';
 
 class WebView extends StatelessWidget {
   const WebView({super.key, required this.url});

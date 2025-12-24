@@ -1,19 +1,21 @@
-import 'package:bmsk_userapp/PIN.dart';
-import 'package:bmsk_userapp/Toast.dart';
-import 'package:bmsk_userapp/Circlefill.dart';
-//import 'package:bmsk_userapp/payment/PaymentProvider.dart';
-import 'package:bmsk_userapp/providers/AuthProvider.dart';
-import 'package:bmsk_userapp/providers/TransferProvider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'providers/AuthProvider.dart';
+import 'providers/AppProvider.dart';
+import 'providers/DepositProvider.dart';
+//import 'providers/TransferProvider.dart';
+import 'widgets/Offline.dart';
+import 'widgets/PIN.dart';
+import 'widgets/Toast.dart';
+import 'widgets/CircleFill.dart';
 
-class BalanceTransferScreen extends StatefulWidget {
-  const BalanceTransferScreen({super.key});
+class BalanceTransfer extends StatefulWidget {
+  const BalanceTransfer({super.key});
   @override
-  State<BalanceTransferScreen> createState() => _BalanceTransferState();
+  State<BalanceTransfer> createState() => _BalanceTransferState();
 }
 
-class _BalanceTransferState extends State<BalanceTransferScreen> {
+class _BalanceTransferState extends State<BalanceTransfer> {
   //bool loading=true;
   final _formKey = GlobalKey<FormState>();
   bool _showNextFields = false;
@@ -43,13 +45,19 @@ class _BalanceTransferState extends State<BalanceTransferScreen> {
     });*/
   }
 
-    void transfer (String user, String type, int amount) async {
-      bool status=await context.read<TransferProvider>().transfer(transferData['user'],transferData['balanceType'], transferData['amount']);
+  @override
+  void dispose() {
+    super.dispose();
+    _usernameController.dispose();
+    _amountController.dispose();
+  }
+  void transfer (String user, String type, int amount) async {
+      bool status=await context.read<DepositProvider>().transfer(transferData['user'],transferData['balanceType'], transferData['amount']);
       if(status) context.read<AuthProvider>().disablePINConnection();
     }
   void _onNext(String? value) {
     setState(() {
-      if (value != null) {
+      if(value!=null) {
         transferData['balanceType'] = value;
         // একবার true হলে আর false হবে না
         if (!_showNextFields) {
@@ -61,12 +69,14 @@ class _BalanceTransferState extends State<BalanceTransferScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final deposit = context.watch<DepositProvider>();
+    final isInternetConnected = context.watch<AppProvider>().isInternetConnected;
     final auth=context.watch<AuthProvider>();
-    final balance=auth.balance;
-    return Scaffold(
+    final balance=deposit.balance;
+    return !(auth.authPrefs['accesses']??[]).contains('transfer')?Center(child:Text('এই মুহূর্তে ব্যাল্যান্স ট্রান্সফার করার অনুমতি নেই')):!isInternetConnected?Offline():Scaffold(
       appBar: AppBar(title: Text('Transfer Balance')),
       body:
-          context.watch<TransferProvider>().loading
+          deposit.loading
               ? Center(child: CircularProgressIndicator())
               : Stack(
                 children: [
@@ -96,6 +106,16 @@ class _BalanceTransferState extends State<BalanceTransferScreen> {
                                       title: const Text('top up'),
                                       leading: Radio<String>(
                                         value: 'top',
+                                        groupValue: transferData['balanceType'],
+                                        onChanged: _onNext,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: ListTile(
+                                      title: const Text('drive'),
+                                      leading: Radio<String>(
+                                        value: 'drive',
                                         groupValue: transferData['balanceType'],
                                         onChanged: _onNext,
                                       ),
@@ -176,7 +196,7 @@ class _BalanceTransferState extends State<BalanceTransferScreen> {
                                   onPressed: () async {
                                     if (_formKey.currentState!.validate()) {
                                       _formKey.currentState!.save();
-                                      if (context.read<AuthProvider>().balance['balanceType']! < transferData['balanceType']) {
+                                      if (context.read<DepositProvider>().balance['balanceType']! < transferData['balanceType']) {
                                         Toast({'message': 'পর্যাপ্ত ব্যাল্যান্স নেই', 'success': false,});
                                         return;
                                       }

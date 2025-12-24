@@ -1,20 +1,21 @@
-import 'package:bmsk_userapp/History/FilterUI.dart';
-import 'package:bmsk_userapp/providers/AuthProvider.dart';
-import 'package:provider/provider.dart';
-import 'package:bmsk_userapp/providers/HistoryProvider.dart';
 import 'package:flutter/material.dart';
-import 'package:bmsk_userapp/providers/SocketProvider.dart';
-import 'package:bmsk_userapp/providers/NotificationProvider.dart';
+import 'package:provider/provider.dart';
+import '../providers/AuthProvider.dart';
+import '../providers/HistoryProvider.dart';
+import '../providers/AppProvider.dart';
+import '../providers/NotificationProvider.dart';
+import '../widgets/Pages.dart';
+import 'FilterUI.dart';
 //import 'package:bmsk_userapp/models/History/BankHistory.dart';
 
-class BankHistoryScreen extends StatefulWidget {
-  const BankHistoryScreen({super.key});
+class BankHistory extends StatefulWidget {
+  const BankHistory({super.key});
   @override
-  State<BankHistoryScreen> createState() => _BankHistoryState();
+  State<BankHistory> createState() => _BankHistoryState();
 }
 
 
-class _BankHistoryState extends State<BankHistoryScreen> {
+class _BankHistoryState extends State<BankHistory> {
 bool filterInit=false;
 dynamic getStatus(status,feedback) {
     dynamic state;
@@ -35,27 +36,27 @@ dynamic getStatus(status,feedback) {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_)async {
-      String status = context.read<NotificationProvider>().failedBankCount>0?'failed':'pending';selected=status;
-      /*_histories[status] =await */context.read<HistoryProvider>().fetchBankHistory(status);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      String status = context.read<NotificationProvider>().failedBankCount>0?'FAILED':'PENDING';selected=status;context.read<HistoryProvider>().changeStatus(status);
+      /*_histories[status] =await */context.read<HistoryProvider>().getBankHistory();
       //_history=_histories[status]!;
-      context.read<SocketProvider>().socket.emit('seen-bank-failed',  context.read<AuthProvider>().username);//implement initState
+      context.read<AppProvider>().socket.emit('seen-bank-failed',  context.read<AuthProvider>().username);//implement initState
     });
   }
-  void handleFilter(String query){context.read<HistoryProvider>().filterBankHistory(query);}
-void handleStatus(String v)  {
+  void handleFilter(context,String query){context.read<HistoryProvider>().filterBankHistory(query);}
+void handleStatus(context,String v)  {
     /*selected=v;
       if(_histories.containsKey(v)){_history=_histories[v]!;}
       else{
         _histories[v]=context.read<HistoryProvider>().fetchPayBillHistory(v) as List<BankHistory>;
         _history=_histories[v]!;
-      }*/
-    context.read<HistoryProvider>().fetchBankHistory(v);
+      }*/context.read<HistoryProvider>().changeStatus(v);
+    context.read<HistoryProvider>().getBankHistory();
   //});
 }
   @override
   Widget build(BuildContext context) {
-    final List<dynamic> history = context.watch<HistoryProvider>().history;
+    final /*List<dynamic>*/ history = context.watch<HistoryProvider>().history;
     return Scaffold(
       appBar: AppBar(
         title: Text('Bank History'),
@@ -63,34 +64,44 @@ void handleStatus(String v)  {
       ),
       body: Stack(
         children:[
-         Column(
-          children: [
-            if(context.watch<HistoryProvider>().filterInit) FilterUI(['pending','failed','success'],selected,handleStatus,handleFilter),
-            Expanded(
-              child: ListView.builder(
-                itemCount: history.length,
-                itemBuilder: (context, index) {
-                  final h= history[index];
-                  return Container(
-                    child:Column(
-                      mainAxisAlignment:MainAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment:MainAxisAlignment.spaceBetween,
-                          children:[Row(children:[Text(h.ac),Text(h.recipient, style:TextStyle(fontSize:12))]),Text('\u09F3${h.amount}')],
-                        ),
-                        Row(
-                          mainAxisAlignment:MainAxisAlignment.spaceBetween,
-                          children: [Text(h.date),Text('${h.status}')], 
-                        )
-                    /*:*/ ]
-                    ),
-                  );
-                },
+         Padding(
+           padding: const EdgeInsets.all(8.0),
+           child: Column(
+            children: [
+              if(context.watch<HistoryProvider>().filterInit) SizedBox(height:60,child:FilterUI(states:['pending','failed','success'],selected:selected,statusHandler:handleStatus,filterHandler:handleFilter)
               ),
-            ),
-          ],
-        ),
+              SingleChildScrollView(
+                scrollDirection: Axis.vertical,
+                child: Expanded(
+                  child: ListView.builder(
+                    itemCount: history['bank']?.length ?? 0,
+                    itemBuilder: (context, index) {
+                      final bankHistory = history['bank'];
+                      if(bankHistory==null) {return Center(child:Text('Not Found'));}
+                      final h= bankHistory[index];
+                      return Container(
+                        child:Column(
+                          mainAxisAlignment:MainAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment:MainAxisAlignment.spaceBetween,
+                              children:[Row(children:[Text(h['acNumber']),Text(h['recipient'], style:TextStyle(fontSize:12))]),Text('\u09F3${h['amount']}')],
+                            ),
+                            Row(
+                              mainAxisAlignment:MainAxisAlignment.spaceBetween,
+                              children: [Text(h['updatedAt']),Text(h['status'])], 
+                            )
+                         ]
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              if(history['pagination']['totalPage']>1) Pages(totalPage:history['pagination']['totalPage'],currentPage:history['pagination']['currentPage'],onPageChange:(int p){context.read<HistoryProvider>().getBankHistory(p);})
+            ],
+                   ),
+         ),
         context.read<HistoryProvider>().loading ? Center(child: CircularProgressIndicator()): SizedBox.shrink(),
         ])
     );

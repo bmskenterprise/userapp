@@ -1,36 +1,38 @@
-import 'package:bmsk_userapp/CircleFill.dart';
-import 'package:bmsk_userapp/FullScreenLoader.dart';
-import 'package:bmsk_userapp/PIN.dart';
-import 'package:bmsk_userapp/Toast.dart';
-import 'package:bmsk_userapp/providers/AuthProvider.dart';
-import 'package:bmsk_userapp/providers/ApiProvider.dart';
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
+import 'providers/AppProvider.dart';
+import 'providers/AuthProvider.dart';
+import 'providers/ApiProvider.dart';
+import 'providers/DepositProvider.dart';
+import 'FullScreenLoader.dart';
+import 'widgets/Offline.dart';
+import 'widgets/CircleFill.dart';
+import 'widgets/PIN.dart';
+import 'widgets/Toast.dart';
 
                   
-class PayBillScreen extends StatefulWidget {
-  const PayBillScreen({super.key});
+class PayBill extends StatefulWidget {
+  const PayBill({super.key});
   @override
-  State<PayBillScreen> createState() => _PayBillScreenState();
+  State<PayBill> createState() => _PayBillState();
 }
 
 
-class _PayBillScreenState extends State<PayBillScreen> {
-  late Box box;
+class _PayBillState extends State<PayBill> {
+  //late Box box;
   Map<String, List<String>> categories={
     'Electricity':['Palli Bidyut (Prepaid)','Palli Bidyut (Postpaid)','DESCO (Prepaid)','DESCO (Postpaid)','NESCO (Prepaid)','NESCO (Postpaid)'],
-    'Internet':['Amber IT','Carnival','Circle Network','DOT Internet','KS Network LTD','Link3','Mazeda Network Limited','Millenium Computers & Networking','Sam Online','Triangle'],
+    'Internet':['Amber IT','Carnival','Circle Network','DOT Internet','KS Network LTD','Link3','BDCOM Online Ltd','Mazeda Network Limited','Millenium Computers & Networking','Sam Online','Triangle'],
     'Gas':['Titas Gas Postpaid (Non-metered)','Titas Gas Postpaid (Metered)','Karnaphuli Gas','Jalalabad Gas'],
     'Water':['Dhaka WASA','Chattogram WASA','Rajshahi WASA','Khulna WASA'],
     'Cable TV':['Akash DTH','Bengal Digital','BumbellBee','Nation Electronics & Cable Network']
   };
   late List<String> billTypes;
   late List<String> subTypes;late String _selectedType;late String _selectedSubType;
-  late TextEditingController _amountController;
-  late TextEditingController _acController;
-  final TextEditingController _dateController = TextEditingController();
-  final TextEditingController _acNameController = TextEditingController();
+  late TextEditingController _controllerAmount;
+  late TextEditingController _controllerAC;
+  final TextEditingController _controllerDate = TextEditingController();
+  final TextEditingController _controllerACName = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
   @override
@@ -44,16 +46,25 @@ class _PayBillScreenState extends State<PayBillScreen> {
       box = Hive.box('permission');
     });*/
   }
+  @override
+  void dispose() {
+    _controllerAmount.dispose();
+    _controllerAC.dispose();
+    _controllerACName.dispose();
+    _controllerDate.dispose();
+    super.dispose();
+  }
   void billRequest()async{
-    bool status=await context.read<ApiProvider>().postBill(_selectedType,_acController.text,int.parse(_amountController.text),_dateController.text,_acNameController.text);
+    bool status=await context.read<ApiProvider>().postBill(_selectedType,_controllerAC.text,int.parse(_controllerAmount.text),_controllerDate.text,_controllerACName.text);
     if(status) context.read<AuthProvider>().disablePINConnection();
   }
   
   @override
   Widget build(BuildContext context) {
     final auth=context.watch<AuthProvider>();
-    final bankBalance=context.watch<AuthProvider>().balance['bank'];
-    return box.get('services').contains('deposit')?Center(child: Text('এই মুহূর্তে পে বিল করার অনুমতি নেই'),) : PopScope(
+    final isInternetConnected=context.watch<AppProvider>().isInternetConnected;
+    final bankBalance=context.watch<DepositProvider>().balance['bank'];
+    return !(auth.authPrefs['accesses']??[]).contains('bill')?Center(child: Text('এই মুহূর্তে পে বিল করার অনুমতি নেই'),) : !isInternetConnected?Offline():PopScope(
       canPop: !(auth.matchedPIN), // যদি next=false হয়, তাহলে back করা যাবে
       onPopInvokedWithResult: (bool didPop, Object? result){
         if(!didPop && auth.matchedPIN) context.read<AuthProvider>().disablePINConnection();
@@ -92,7 +103,7 @@ class _PayBillScreenState extends State<PayBillScreen> {
                     ),
                       SizedBox(height: 40,),
                       TextFormField(
-                        controller: _acController,
+                        controller: _controllerAC,
                         textInputAction: TextInputAction.next,
                         decoration: InputDecoration(
                           hintText: 'Biil Account Number',
@@ -100,7 +111,7 @@ class _PayBillScreenState extends State<PayBillScreen> {
                       ),
                       SizedBox(height: 40,),
                       TextFormField(
-                        controller: _amountController,
+                        controller: _controllerAmount,
                         textInputAction: TextInputAction.next,
                         keyboardType: TextInputType.number,
                         decoration: InputDecoration(
@@ -115,7 +126,7 @@ class _PayBillScreenState extends State<PayBillScreen> {
                         ),
                       ),
                       TextFormField(
-                        controller: _dateController,
+                        controller: _controllerDate,
                         decoration: InputDecoration(
                           hintText: 'Last Pay Date',
                         ),
@@ -123,12 +134,12 @@ class _PayBillScreenState extends State<PayBillScreen> {
                         onTap: () => _selectDate(context),
                       ),
                       TextFormField(
-                        controller: _acNameController,
+                        controller: _controllerACName,
                         decoration: InputDecoration(hintText: 'ac name'),
                       ),SizedBox(height: 60,),
                       FilledButton(
                         onPressed: ()async{
-                          if(double.parse(_amountController.text) > bankBalance!){ Toast({'message':'পর্যাপ্ত ব্যাল্যান্স নেই', 'success':false});}
+                          if(double.parse(_controllerAmount.text) > bankBalance!){ Toast({'message':'পর্যাপ্ত ব্যাল্যান্স নেই', 'success':false});}
                           else{
                            if (_formKey.currentState!.validate()) {
                               _formKey.currentState!.save();showModalBottomSheet(
@@ -162,8 +173,8 @@ class _PayBillScreenState extends State<PayBillScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children:[
-                              Column(crossAxisAlignment:CrossAxisAlignment.center, children:[Text('বিল অ্যাকাউন্ট  নাম্বার'),Text(_acController.text)]),
-                              Column(crossAxisAlignment:CrossAxisAlignment.center, children:[Text('পরিমাণ'), Text('\u09F3 ${_amountController.text}')])
+                              Column(crossAxisAlignment:CrossAxisAlignment.center, children:[Text('বিল অ্যাকাউন্ট  নাম্বার'),Text(_controllerAC.text)]),
+                              Column(crossAxisAlignment:CrossAxisAlignment.center, children:[Text('পরিমাণ'), Text('\u09F3 ${_controllerAmount.text}')])
                             ]
                           ),
                       Row(
@@ -171,7 +182,7 @@ class _PayBillScreenState extends State<PayBillScreen> {
                         children:[
                           Column(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children:[Text('নতুন ব্যালেন্স / ব্যবহারযোগ্য ব্যালেন্স'),Text('${bankBalance!-(int.parse(_amountController.text))} / $bankBalance')]
+                            children:[Text('নতুন ব্যালেন্স / ব্যবহারযোগ্য ব্যালেন্স'),Text('${bankBalance!-(int.parse(_controllerAmount.text))} / $bankBalance')]
                           )
                         ]
                       ),SizedBox(height: 40,),
@@ -197,7 +208,7 @@ class _PayBillScreenState extends State<PayBillScreen> {
     );
     if (picked != null){
       setState(() {
-        _dateController.text = picked.toString().split(' ')[0];
+        _controllerDate.text = picked.toString().split(' ')[0];
       });
     }
   }

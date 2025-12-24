@@ -1,20 +1,21 @@
-import 'package:bmsk_userapp/providers/NotificationProvider.dart';
-import 'package:bmsk_userapp/History/FilterUI.dart';
-import 'package:bmsk_userapp/providers/AuthProvider.dart';
-import 'package:bmsk_userapp/providers/SocketProvider.dart';
-import 'package:bmsk_userapp/providers/HistoryProvider.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
+import '../providers/AuthProvider.dart';
+import '../providers/AppProvider.dart';
+import '../providers/NotificationProvider.dart';
+import '../providers/HistoryProvider.dart';
+//import 'package:http/http.dart' as http;
+import '../widgets/Pages.dart';                                       
+import 'FilterUI.dart';
 
-class PackHistoryScreen extends StatefulWidget {
-  const PackHistoryScreen({super.key});
+class RegularHistory extends StatefulWidget {
+  const RegularHistory({super.key});
   @override
-  State<PackHistoryScreen> createState() => _PackHistoryScreen();
+  State<RegularHistory> createState() => _RegularHistory();
 }
 
 
-class _PackHistoryScreen extends State<PackHistoryScreen> {
+class _RegularHistory extends State<RegularHistory> {
   String searchQuery = '';String selected='pending';
   List _regulars = [];late Map _histories;
   bool searchInit = false;
@@ -32,30 +33,31 @@ class _PackHistoryScreen extends State<PackHistoryScreen> {
     }
     return state;
   }
-  void handleState(String v){
+  void filter(context,String v){context.read<HistoryProvider>().filterRegularHistory(v);}
+  void handleStatus(context,String v){
     setState(() {
       selected=v;
       if(_histories.containsKey(v)){_regulars=_histories[v];}
       else{
-        _histories[v]=context.read<HistoryProvider>().fetchDriveHistory(v);_regulars=_histories[v];
+        _histories[v]=context.read<HistoryProvider>().getRegularHistory();_regulars=_histories[v];
       }
-    
     });
   }
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_)async {
-      String status=context.read<NotificationProvider>().failedDriveCount>0?'failed':'pending';
-      _histories[status] =await context.read<HistoryProvider>().fetchDriveHistory(status);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      String status=context.read<NotificationProvider>().failedDriveCount>0?'FAILED':'PENDING';
+      /*_histories[status] =await */context.read<HistoryProvider>().changeStatus(status);context.read<HistoryProvider>().getRegularHistory();
       _regulars=_histories[status];
-      context.read<SocketProvider>().socket.emit('seen-regular-failed',  context.read<AuthProvider>().username);
+      context.read<AppProvider>().socket.emit('seen-regular-failed',  context.read<AuthProvider>().username);
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final history = context.watch<HistoryProvider>().history;             //}
     return Scaffold(
       appBar: AppBar(
         title: const Text("Pack History"),
@@ -69,14 +71,14 @@ class _PackHistoryScreen extends State<PackHistoryScreen> {
             icon: Icon(Icons.search)
           )
         ],
-      ),
+      ),//floatingActionButton:,
       body: context.watch<HistoryProvider>().loading
         ? Center(child: CircularProgressIndicator())
         : Padding(
           padding: const EdgeInsets.all(8.0),
           child: Column(
             children: [
-              if(searchInit) FilterUI(['pending','failed','success'],selected,handleState)/*TextField(
+              if(searchInit) FilterUI(states:['pending','failed','success'],selected:selected,statusHandler:handleStatus,filterHandler:filter),/*TextField(
                 decoration: InputDecoration(
                   hintText: 'Search',
                 ),
@@ -85,7 +87,7 @@ class _PackHistoryScreen extends State<PackHistoryScreen> {
                     searchQuery = v.toString();
                   });
                 },
-              )*/,
+              )*/
               Expanded(
                 child: ListView.builder(
                   itemCount: _regulars.length,
@@ -96,14 +98,12 @@ class _PackHistoryScreen extends State<PackHistoryScreen> {
                     }
                     else if(packHit.values.any((value) => value.toLowerCase().contains(searchQuery))){
                       return packTile(packHit);
-                    }else{
-                      return Text('পাওয়া যায়নি');
-                    }
+                    }else {return Text('পাওয়া যায়নি');}
+                      //return Text('পাওয়া যায়নি');
                   },
                 ),
-                                        
                 ),
-              
+              if(history['pagination'].totalPage>1) Pages(totalPage:history['pagination'].totalPage,currentPage:history['pagination'].currentPage,onPageChange:(int p){context.read<HistoryProvider>().getRegularHistory(p);})
             ],
           ),
         ),

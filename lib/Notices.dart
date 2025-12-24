@@ -1,19 +1,19 @@
-import 'package:bmsk_userapp/services/ClientService.dart';
 import 'package:flutter/material.dart';
+import 'services/AppService.dart';
 
-class NoticeScreen extends StatefulWidget {
-  const NoticeScreen({super.key});
+class Notice extends StatefulWidget {
+  const Notice({super.key});
   @override
-  State<NoticeScreen> createState() => _NoticeScreenState();
+  State<Notice> createState() => _NoticeState();
 }
 
-class _NoticeScreenState extends State<NoticeScreen> {
+class _NoticeState extends State<Notice> {
   late Future<List> _noticesFuture;
 
   @override
   void initState() {
     super.initState();
-    _noticesFuture = ClientService().fetchNotices();
+    _noticesFuture = AppService().fetchNotices();
   }
   @override
   Widget build(BuildContext context) {

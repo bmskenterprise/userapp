@@ -1,12 +1,14 @@
 //import 'dart:convert';
-//import 'package:bmsk_userapp/models/History/BankHistory.dart';
-//import 'package:bmsk_userapp/models/History/DepositHistory.dart';
-//import 'package:bmsk_userapp/models/History/DriveHistory.dart';
-//import 'package:bmsk_userapp/models/History/PayBillHistory.dart';
-//import 'package:bmsk_userapp/models/History/TopupHistory.dart';
-import 'package:bmsk_userapp/services/HistoryService.dart';
-//import 'package:bmsk_userapp/util/baseURL.dart';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+//import '../models/History/BankHistory.dart';
+//import '../models/History/DepositHistory.dart';
+//import '../models/History/DriveHistory.dart';
+//import '../models/History/PayBillHistory.dart';
+//import '../models/History/TopupHistory.dart';
+import '../services/HistoryService.dart';
+//import '../util/baseURL.dart';
 //import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -14,23 +16,28 @@ import 'package:shared_preferences/shared_preferences.dart';
 class HistoryProvider with ChangeNotifier {
 final HistoryService _historyService = HistoryService();
   bool _loading=false;
+  late String _status;
   bool _filterInit=false;
-  List _history=[];
-  Map<String, List> _histories = {};
+  Map _history={};
+  final Map<String, Map> _histories = {};
+  String get status => _status;
   bool get filterInit => _filterInit;
   bool get loading => _loading;
-  List get history => _history;
+  Map get history => _history;
   
 getAuth() async{
   SharedPreferences prefs = await SharedPreferences.getInstance();
-  return prefs.getStringList('auth');
+  return jsonDecode(prefs.getString('auth')??'{}');
 }
 
-  Future fetchDepositHistory(String status) async {
+    //   throw Exception('Failed to load bank history');
+  changeStatus(String v){_status = v; }
+    //_status = v;//return [];
+  Future getDepositHistory(/*String status,*/[int? page]) async {
       if(_histories.containsKey(status)){_history=_histories[status]!;}
       else{
         _loading=true;notifyListeners();
-      _histories[status]=await _historyService.fetchDepositHistory(status);
+      _histories[status]=await _historyService.fetchDepositHistory(status,page);
         _history=_histories[status]!;
         _loading=false;notifyListeners();
       }
@@ -45,15 +52,14 @@ getAuth() async{
     }catch(e){
       return [];
     }finally{
-      _loading=false;notifyListeners();
-    }*/
+      _loading=false;notifyListeners();}*/
   }
 
-  Future fetchTopupHistory(String status) async {
+  Future getTopupHistory(/*String status,*/[int? page]) async {
       if(_histories.containsKey(status)){_history=_histories[status]!;}
       else{
         _loading=true;notifyListeners();
-      _histories[status]=await _historyService.fetchTopupHistory(status);
+      _histories[status]=await _historyService.fetchTopupHistory(status,page);
         _history=_histories[status]!;
         _loading=false;notifyListeners();
       }
@@ -68,22 +74,24 @@ getAuth() async{
           /*_topups =*/return data.map((json) => TopupHistory.fromJson(json)).toList();
           //_isLoading = false;
         //});
-      } else {
-        throw Exception('Failed to load topup history');
-      }
-    } catch (e) {
-      return [];
-    }finally {
-      _loading = false;notifyListeners();
-    }*/
+        throw Exception('Failed to load topup history');*/
   }
 
+  Future getRegularHistory([int? page]) async{
+    if(_histories.containsKey(status)){_history = _histories[status]!;}
+    else{
+      _loading = false;notifyListeners();
+      _histories[status] = await _historyService.fetchRegularHistory(status,page);
+      _history = _histories[status]!;
+      _loading = false;notifyListeners();
+    }
+  }
 
-  Future fetchDriveHistory(String status) async {
+  Future getDriveHistory(/*String status,*/[int? page]) async {
       if(_histories.containsKey(status)){_history=_histories[status]!;}
       else{
         _loading=true;notifyListeners();
-      _histories[status]=await _historyService.fetchDriveHistory(status);
+      _histories[status]=await _historyService.fetchDriveHistory(status,page);
         _history=_histories[status]!;
         _loading=false;notifyListeners();
       }
@@ -111,11 +119,11 @@ getAuth() async{
 
 
 
-  Future fetchPayBillHistory(String status) async {
+  Future getPayBillHistory(/*String status,*/[int? page]) async {
       if(_histories.containsKey(status)){_history=_histories[status]!;}
       else{
         _loading=true;notifyListeners();
-      _histories[status]=await _historyService.fetchPayBillHistory(status)/* as List<BankHistory>*/;
+      _histories[status]=await _historyService.fetchPayBillHistory(status,page)/* as List<BankHistory>*/;
         _history=_histories[status]!;
         _loading=false;notifyListeners();
       }
@@ -143,37 +151,76 @@ getAuth() async{
 
 
 
-  Future fetchBankHistory(String status) async {
+  Future getBankHistory(/*String status,*/[int? page]) async {
     //try {
       if(_histories.containsKey(status)){_history=_histories[status]!;}
       else{
         _loading=true;notifyListeners();
-      _histories[status]=await _historyService.fetchPayBillHistory(status)/* as List<BankHistory>*/;
+      _histories[status]=await _historyService.fetchPayBillHistory(status,page)/* as List<BankHistory>*/;
         _history=_histories[status]!;
       _loading = false;
       notifyListeners();
       }
   }
+  
+  void getBkashHistory(/*String status,*/[int? page]) async{
+    if(_histories.containsKey(status)){_history=_histories[status]!;}
+    else{
+      _loading=true;notifyListeners();
+      _histories[status]=await _historyService.fetchBkashHistory(status,page);
+      _history=_histories[status]!;
+      _loading=false;notifyListeners();
+    }
+  }
+  
+  void getDBBLHistory(/*String status,*/[int? page]) async{
+    if(_histories.containsKey(status)){_history=_histories[status]!;}
+    else{
+      _loading=true;notifyListeners();
+      _histories[status]=await _historyService.fetchDBBLHistory(status,page);
+      _history=_histories[status]!;
+      _loading=false;notifyListeners();
+    }
+  }
+  
+  void getNagadHistory(/*String status,*/[int? page]) async{
+    if(_histories.containsKey(status)){_history=_histories[status]!;}
+    else{
+      _loading=true;notifyListeners();
+      _histories[status]=await _historyService.fetchNagadHistory(status,page);
+      _history=_histories[status]!;
+      _loading=false;notifyListeners();
+    }
+  }
   void filterDepositHistory (String query){
-   _history=_history.where((h) => [h.type,h.amount,h.date].any((i) => i.contains(query))).toList();notifyListeners();
+   _history=_history['deposits'].where((h) => [h.type,h.amount,h.date].any((i) => i.contains(query))).toList();notifyListeners();
   }  
   void filterTopupHistory (String query)  {
-    _history = _history.where((h) => [h.recipient,h.telecom,h.amount,h.date].any((i) => i.contains(query))).toList();notifyListeners();
+    _history = _history['topups'].where((h) => [h.recipient,h.telecom,h.amount,h.date].any((i) => i.contains(query))).toList();notifyListeners();
   }      
   void filterDriveHistory (String query){
-    _history = _history.where((h) => [h.recipient,h.telecom,h.amount,h.date].any((i) => i.contains(query))).toList();notifyListeners();
+    _history = _history['drives'].where((h) => [h.recipient,h.telecom,h.amount,h.date].any((i) => i.contains(query))).toList();notifyListeners();
   }
   void filterRegularHistory (String query){
-    _history = _history.where((h) => [h.recipient,h.telecom,h.amount,h.date].any((i) => i.contains(query))).toList();notifyListeners();
+    _history = _history['regulars'].where((h) => [h.recipient,h.telecom,h.amount,h.date].any((i) => i.contains(query))).toList();notifyListeners();
   }
   void filterBankHistory (String query)    {
-    _history = _history.where((h) => [h.bankName,h.acNumber,h.amount].any((i) => i.contains(query))).toList();notifyListeners();
+    _history = _history['banks'].where((h) => [h.bankName,h.acNumber,h.amount].any((i) => i.contains(query))).toList();notifyListeners();
   }      
   void filterPayBillHistory (String query){
-    _history = _history.where((h) => [h.type,h.acNumber,h.amount,h.date].any((i) => i.contains(query))).toList();notifyListeners();//   throw Exception('Failed to load bank history');
-  }/*    }
-      return [];
-    }finally {*/
+    _history = _history['bills'].where((h) => [h.type,h.acNumber,h.amount,h.date].any((i) => i.contains(query))).toList();notifyListeners();
+  }
+  void filterBkashHistory (String query){
+    _history = _history['bkashes'].where((h) => [h.type,h.acNumber,h.amount,h.date].any((i) => i.contains(query))).toList();notifyListeners();
+  }
+  void filterDBBLHistory (String query){
+    _history = _history['dbbls'].where((h) => [h.type,h.acNumber,h.amount,h.date].any((i) => i.contains(query))).toList();notifyListeners();
+  }
+  void filterNagadHistory (String query){
+    _history = _history['nagads'].where((h) => [h.type,h.acNumber,h.amount,h.date].any((i) => i.contains(query))).toList();notifyListeners();
+  }
+  
+  
       void setFilterInit () async {
         _filterInit=!_filterInit;
       }

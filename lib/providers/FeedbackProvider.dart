@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:bmsk_userapp/services/FeedbackService.dart';
+import 'package:bmsk_userapp/services/ApiService.dart';
 
 class FeedbackProvider with ChangeNotifier {
-  final _feedbackService = FeedbackService();
+  final _apiService = ApiService();
   bool _loading = false;
   bool _initForm = false;
   bool get initForm => _initForm;
@@ -12,16 +12,16 @@ class FeedbackProvider with ChangeNotifier {
 
   Future<List> getFeedbacks() async{
     _loading = true;notifyListeners();
-    _items = await _feedbackService.fetchFeedbacks();
+    _items = await _apiService.fetchFeedbacks();
     _loading = false;notifyListeners();
     return _items;
   }
 
-  Future<Map> setFeedback(String subject, String description) async {
+  Future<Map> addFeedback(/*String subject, */String description) async {
     _loading = true;notifyListeners();
-    final success = await _feedbackService.addFeedback(subject, description);
+    final success = await _apiService.addFeedback(/*subject, */description);
     if (success) {
-        _items.add({"subject": subject, "description": description});
+        _items.add({/*"subject": subject, */"description": description});
         _loading=false;notifyListeners();
       return {'message':'Feedback added successfully', 'success':true};
     }

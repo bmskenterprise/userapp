@@ -1,51 +1,54 @@
-import 'dart:convert';
-import 'package:bmsk_userapp/Toast.dart';
-import 'package:bmsk_userapp/util/baseURL.dart';
-import 'package:flutter/widgets.dart';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:flutter/material.dart';
+import '../services/DepositService.dart';
 
 class DepositProvider with ChangeNotifier{
+  final DepositService _depositService=DepositService();
   bool _loading=true;
   bool get loading=>_loading;
   bool _hasError=false;
   bool get hasError=>_hasError;
-  late List _depositData;
-  List get depositData=>_depositData;
-  
-  getAuth()async{
-    SharedPreferences prefs=await SharedPreferences.getInstance();
-    return prefs.getStringList('auth');
-  }
-  
-  Future<void> depositInfo()async{
-    try{
-      final response = await http.get(
-        Uri.parse(ApiConstants.mbanks),
-        headers: {'Content-Type':'application/json','Authorization':'Bearer ${getAuth()[1]}'},
-      );
-        _loading=false;notifyListeners();
-      if (response.statusCode == 200){
-        /*Map*/ _depositData= jsonDecode(response.body);
-      }
-      throw Exception();
-     }catch(e) {
-        _hasError = true;notifyListeners();
-    }finally{_loading = false;notifyListeners();}//    
-  }
-  
-  Future depositByTxnId(String txnid,[String? ref])async{
-    try{
-      final response = await http.post(
-        Uri.parse('${ApiConstants.depositTxn}/${getAuth()[0]}'),
-        headers: {'Content-Type':'application/json','Authorization':'Bearer ${getAuth()[1]}'},
-        body: jsonEncode({'txnid':txnid,'ref':ref})
-      );
+  Map<String,int> _balance ={};
+  List<Map> _pgws =[];
+  List<Map> _mbanks =[];
+  late Map _depositInit;
       
-      if(response.statusCode==200){
-        jsonDecode(response.body);Toast({'message':'deposit success','success':true});
-      }// 
-    }catch(err){Toast({'message':'deposit failed','success':false});}
+  List<Map> get mbanks=>_mbanks;
+  Map get depositInit=>_depositInit;
+  late Map<String, Map<String,int>> _depositRange;
+  Map<String, Map<String,int>> get depositRange=> _depositRange;
+  Map<String,int> get balance => _balance;
+  List<Map> get pgws=>_pgws;
+  
+  void getMbanks() async{
+    _mbanks = await _depositService.fetchMbanks();
+  }
+  void getDepositRangeInfo()async{
+    _loading=true;notifyListeners();
+    _depositRange= await _depositService.fetchDepositRangeInfo();
+    _loading=false;notifyListeners();
+  }
+  
+  void depositByTxnId(String txn,String type,[String? ref])async{
+    _loading=true;notifyListeners();
+    await _depositService.depositByTxnId(txn,type,ref);
+    _loading=false;notifyListeners();
+  }
+
+  Future transfer(String recipient, String type, int amount) async{
+    _loading = true;notifyListeners();
+      final status = await _depositService.transfer(recipient, type, amount);_loading=false;notifyListeners();
+      return status;
+  }
+  void getBalance()async{
+    /*final Map<String,double> balanceData*/_balance=await _depositService.fetchBalance();
+    //_balance['topup']=balanceData['topup'];
+    //_balance['bank']=balanceData['bank'];
+  }
+  void getPGW()async{
+    _pgws=await _depositService.fetchPGWs();notifyListeners();
+  }
+  
+  void setDepositData(Map data)async{
+    _depositInit=data;notifyListeners();
   }
 }

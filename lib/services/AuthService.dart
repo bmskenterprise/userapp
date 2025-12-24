@@ -1,66 +1,80 @@
 import 'dart:convert';
-import 'package:bmsk_userapp/Toast.dart';
-import 'package:bmsk_userapp/util/baseURL.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../util/baseURL.dart';
+import '../widgets/Toast.dart';
 
 class AuthService {
   //final String apiUrl = 'https://your-api.com/login'; // API URL
 
-  Future<List<String>?> getAuth()async{
+  Future<Map> getAuth()async{
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getStringList('auth') /*?? 'user'*/;
+    return jsonDecode(prefs.getString('auth')??'{}') /*?? 'user'*/;
   }
 
   Future<bool> login(String username, String password) async {
     try{
-      final response = await http.post(
+      final res = await http.post(
         Uri.parse(ApiConstants.login),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'username': username, 'password': password}),
       );
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+      if (res.statusCode == 200) {
+        final data = Map.from(jsonDecode(res.body));
         //final token = data['token'];
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setStringList('auth', [data['user'],data['token']]);
+        await prefs.setString('auth', jsonEncode({'user':[data['token'],data['user'],data['level']],'accesses':data['accesses']}));
         //await prefs.setString('user', data['user']);
-        return data['user'];
+        return true/*data['user']*/;
       }
-throw Exception('failed to login');
-    } catch(err) {Toast({'message':err.toString(),'success':false});
-      return false;
-    }
+      throw Exception('failed to login');
+    } catch(err) {Toast({'message':err.toString(),'success':false});return false;}
   }
 
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('token');
+    await prefs.remove('auth');
   }
 
   Future<bool> isLoggedIn() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.containsKey('token');
+    return prefs.containsKey('auth');
   }
 
-  register(String username,String fullname,int nid,int pin,String password)async{
+  Future<void> editProfile() async{
+    // Update profile logic here
     try {
-      final response = await http.post(
-        Uri.parse(ApiConstants.register),
-        headers: {'Content-Type':'application/json'},
-        body: jsonEncode({'username':username,'fullname':fullname,'nid':nid,'password':password,'pin':pin})
+      Map auth =await getAuth();
+      final res =await http.post(
+        Uri.parse(ApiConstants.updateProfile),
+        headers: {'Content-Type':'application/json','Authorization':'Bearer ${auth['user'][0]}'},
+        body: jsonEncode({''})
       );
-      if(response.statusCode==200){
-        jsonDecode(response.body);//return;
-      }
-      throw Exception();
-    } catch (err) {
-      Toast({'message':err.toString(),'success':false});
-    }
+      //if (response.statusCode == 
+      if(res.statusCode==200) {}
+        
+      throw Exception('Failed to update profile');
+    }catch(e) {Toast({'message':e.toString(),'success':false});} //(e) {
+      // Handle error
+    //}
   }
-  /*Future matchPassword(String password) async {
-    setState((){
-                        requesting=true;
+  Future changePIN(String pin) async {
+    try{
+      final res=await http.patch(
+        Uri.parse(ApiConstants.changePIN),
+        headers: {'Content-Type':'application/json'},
+        body: jsonEncode({'pin':pin})
+      );
+      final decoded = jsonDecode(res.body);
+      if(res.statusCode==200) {Toast({'message':decoded['message'],'success':false});return;}
+      throw Exception(decoded['error']?? 'সার্ভার সমস্যা');
+    }catch(e) {Toast({'message':e.toString(),'success':false});}
+  }
+     
+    
+    
+    
+                        /*requesting=true;
                     });
                     final response=await http.get(Uri.parse(ApiConstants.matchPassword));
                     if(response.statusCode==200){
@@ -69,51 +83,46 @@ throw Exception('failed to login');
                       // });
                     } else{
                       // re
-                    }
-  }*/
+                    }*/
 
-  Future<dynamic> changePassword(String password) async {
-    final response = await http.post(
-      Uri.parse(ApiConstants.changePassword),
-      headers: {'Content-Type':'application/json'},
-      body: jsonEncode({'password':password})
-    );
-    if(response.statusCode==200){
-      return jsonDecode(response.body);
-    }
-    return {'message':'সার্ভার সমস্যা ', 'success':false};
+  Future<dynamic> changePassword(String oldPassword,String password) async{
+    try{
+      final res = await http.patch(
+        Uri.parse(ApiConstants.changePassword),
+        headers: {'Content-Type':'application/json'},
+        body: jsonEncode({'oldPassword':oldPassword,'password':password})
+      );
+      if(res.statusCode==200){Toast({'message':'পাসওয়ার্ড পরিবর্তন হয়েছে','success':true});return;}
+      throw Exception('সার্ভার সমস্যা');
+    }catch(e) {Toast({'message':e.toString(),'success':false});}   
   }
   
   Future<bool> matchPIN(String pin) async {
-    try {
-      final authData = await getAuth();
-      final response = await http.post(
-        Uri.parse('${ApiConstants.validatePIN}/${authData?[0]}'),
-        headers: {'Content-Type':'application/json', 'Authorization':'Bearer ${authData?[1]}'},
+    try{
+      final auth = await getAuth();
+      final res = await http.post(
+        Uri.parse(ApiConstants.validatePIN),
+        headers: {'Content-Type':'application/json', 'Authorization':'Bearer ${auth['user'][0]}'},
         body: jsonEncode({/*'user':authData['user'],*/ 'pin':pin}), // Replace with actual phone number
       );
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if(data['matched']){return true;}
+      if(res.statusCode==200) {
+        final data = Map.from(jsonDecode(res.body));
+        if(data['matched']!=null&&data['matched']){return true;}
         else{ Toast({'message':'পিন সঠিক নয়','success':false});return false;}
       } 
-      throw Exception(); //return '';
-      //}
-    } catch (e) {
-      return false;
-    }
+      throw Exception('সার্ভার সমস্যা');
+    }catch(e) {Toast({'message':e.toString(),'success':false});return false;} 
   }
   
   
-  Future<Map> getBalance() async {
-    try {
+  /*Future<Map> getBalance() async {
+    try{
       final response = await http.get(Uri.parse(ApiConstants.balance));
-      if(response.statusCode==200){
+      if(response.statusCode==200){return jsonDecode(response.body);}
         return jsonDecode(response.body);
       }
       throw Exception();
-    }catch (e) {
       return {'message':'সার্ভার সমস্যা ', 'success':false};
     }
-  }
+  }*/
 }

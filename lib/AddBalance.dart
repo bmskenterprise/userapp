@@ -1,76 +1,56 @@
-import 'dart:convert';
-import 'package:bmsk_userapp/Deposit/Payment.dart';
-import 'package:bmsk_userapp/Deposit/Manual.dart';
+//import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'providers/AuthProvider.dart';
+import 'providers/DepositProvider.dart';
+import 'PaymentGatewayFragment.dart';
+import 'PaymentManualFragment.dart';
 
 
-class AddBalanceScreen extends StatefulWidget {
-  const AddBalanceScreen({super.key});
+class AddBalance extends StatefulWidget {
+  const AddBalance({super.key});
   @override
-  State<AddBalanceScreen> createState() => _AddBalanceState();
+  State<AddBalance> createState() => _AddBalanceState();
 }
 
 
-class _AddBalanceState extends State<AddBalanceScreen> {
-  Future depositInfo()async{
-    try{
-      final response = await http.get(Uri.parse('${ApiConstants.baseUrl}/api/v1/deposit'));
-      setState(() {
-        loading=false;
-      });
-      if (response.statusCode == 200){
-        /*Map*/ depositData= jsonDecode(response.body);
-        showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text("Add Balance!"),
-            content: Column(
-              children:[Text("minimum \u09F3${depositData?['min']} "), Text("maximum \u09F3${depositData?['max']} .")]
-            ),
-            actions: [
-              TextButton(
-                child: Text("ok"),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ],
-          );
-        },
-      );
-      }
-     }catch(e) {
-          print(e);
-          }
-  }
-
+class _AddBalanceState extends State<AddBalance> {
+//late Box box;
   @override
   void initState() {
-    super.initState();depositInfo();
-    box = Hive.box('permission');/*WidgetsBinding.instance.addPostFrameCallback((_) {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<DepositProvider>().getDepositRangeInfo();
+      Map<String,Map<String,int>> deposit=context.watch<DepositProvider>().depositRange;
       showDialog(
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            title: Text("Welcome!"),
-            content: Text("You navigated to the second screen."),
+            title: Text("Deposit"),
+            content: Column(children:[Text('Topup'),Text("Minimum ${deposit['topupDeposit']!['min']} to the Maximum ${deposit['topupDeposit']!['max']}"),Text('Bank'),Text("Minimum ${deposit['bankDeposit']!['min']} to the Maximum ${deposit['bankDeposit']!['max']}")]),
             actions: [
               TextButton(
-                child: Text("Close"),
+                child: Text("OK"),
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ],
           );
         },
       );
-    });*/
+    });
   }
   @override
   Widget build(BuildContext context) {
-    return box.get('services').contains('deposit')?Center(child: Text('এই মুহূর্তে ডিপজিট করার অনুমতি নেই'),): Scaffold(
-      appBar: AppBar(
-        title: Text('Add Balance'),
-        bottom: TabBar(tabs: [Text('Manual'),Text('Payment')]),
+    final auth = context.read<AuthProvider>();
+    return /*!(auth.authPrefs['accesses']??[]).contains('deposit')?Center(child: Text('এই মুহূর্তে ডিপজিট করার অনুমতি নেই'),):*/ DefaultTabController(
+      length:2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('Add Balance'),
+          bottom: TabBar(tabs: [Text('Manual'),Text('Payment')]),
+        ),
+        body: TabBarView(children: [PaymentManualFragment(),PaymentGatewayFragment()])
       ),
-      body: TabBarView(children: [Manual(),Payment()])
+    );
   }
 }
